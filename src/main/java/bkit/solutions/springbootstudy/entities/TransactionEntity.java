@@ -4,6 +4,8 @@ import bkit.solutions.springbootstudy.dtos.TransactionType;
 import java.math.BigDecimal;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -24,7 +26,7 @@ import lombok.Setter;
 public class TransactionEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @Column(nullable = false)
@@ -36,5 +38,6 @@ public class TransactionEntity {
   private BigDecimal amount;
 
   @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
   private TransactionType type;
 }

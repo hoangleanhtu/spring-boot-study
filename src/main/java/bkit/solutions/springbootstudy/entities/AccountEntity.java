@@ -22,7 +22,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AccountEntity {
   @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @Column(unique = true)

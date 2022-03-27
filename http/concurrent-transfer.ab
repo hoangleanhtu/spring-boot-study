@@ -1,0 +1,1 @@
+ab -p transfer-request.json -T application/json -c 4 -n 4 http://127.0.0.1:8181/transactions
