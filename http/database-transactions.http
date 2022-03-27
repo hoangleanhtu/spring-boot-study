@@ -12,8 +12,17 @@ POST http://127.0.0.1:8181/accounts/{{accountNumber}}/deposit
 Content-Type: application/json
 
 {
-  "amount": 1000
+  "amount": {{amount}}
 }
 ###
 GET http://127.0.0.1:8181/transactions/{{accountNumber}}
+###
+POST http://127.0.0.1:8181/transactions
+Content-Type: application/json
+
+{
+  "fromAccountNumber": "tu",
+  "toAccountNumber": "vinh",
+  "amount": 500
+}
 ###
