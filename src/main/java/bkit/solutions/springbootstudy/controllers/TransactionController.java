@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("transactions")
 public record TransactionController(TransactionService transactionService) {
 
-  @GetMapping("{account_number}")
+  @GetMapping("{accountNumber}")
   public Collection<TransactionDto> list(@PathVariable String accountNumber) {
     return transactionService.list(accountNumber);
   }
