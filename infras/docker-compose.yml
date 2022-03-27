@@ -1,0 +1,11 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:14.2
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: pPassW0
+      POSTGRES_USER: pUseR
+      POSTGRES_DB: spring_boot
+    ports:
+      - "5432:5432"
