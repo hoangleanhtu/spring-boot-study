@@ -1,6 +1,9 @@
-POST http://127.0.0.1:8181/account
+POST http://127.0.0.1:8181/accounts
 Content-Type: application/json
 
 {
   "accountNumber": "tu"
 }
+
+###
+GET http://127.0.0.1:8181/accounts
