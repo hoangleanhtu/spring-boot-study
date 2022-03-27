@@ -12,5 +12,5 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
 
   @Modifying
   @Query("update AccountEntity b set b.balance = b.balance + :amount where b.accountNumber = :accountNumber")
-  long deposit(String accountNumber, BigDecimal amount);
+  int deposit(String accountNumber, BigDecimal amount);
 }

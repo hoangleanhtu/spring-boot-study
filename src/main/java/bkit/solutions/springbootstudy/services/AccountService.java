@@ -5,10 +5,14 @@ import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
 import java.math.BigDecimal;
 import java.util.Collection;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
-public record AccountService(AccountRepository accountRepository) {
+@RequiredArgsConstructor
+public class AccountService {
+
+  private final AccountRepository accountRepository;
 
   public AccountResponse create(String accountNumber) {
 

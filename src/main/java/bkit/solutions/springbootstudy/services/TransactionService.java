@@ -1,9 +1,9 @@
 package bkit.solutions.springbootstudy.services;
 
+import bkit.solutions.springbootstudy.dtos.AccountResponse;
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransactionType;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
-import bkit.solutions.springbootstudy.dtos.AccountResponse;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.entities.TransactionEntity;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
@@ -11,13 +11,18 @@ import bkit.solutions.springbootstudy.repositories.TransactionRepository;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.function.Function;
+import javax.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public record TransactionService(
-    TransactionRepository transactionRepository, AccountRepository accountRepository) {
+@RequiredArgsConstructor
+public class TransactionService {
+
+  private final TransactionRepository transactionRepository;
+  private final AccountRepository accountRepository;
 
   public Collection<TransactionDto> list(final String accountNumber) {
     return transactionRepository.findAllByAccountNumber(accountNumber)
@@ -41,6 +46,7 @@ public record TransactionService(
         .build();
   }
 
+  @Transactional
   public AccountResponse deposit(String accountNumber, BigDecimal amount) {
     transactionRepository.save(
         TransactionEntity.builder()
@@ -50,8 +56,11 @@ public record TransactionService(
             .build()
     );
 
-    final long deposit = accountRepository.deposit(accountNumber, amount);
-    log.info("Deposit to account {} {}", accountNumber, deposit == 1);
+    final int rowUpdated = accountRepository.deposit(accountNumber, amount);
+    if (rowUpdated == 0) {
+      log.error("Account Number {} does not exist", accountNumber);
+      throw new IllegalArgumentException("Account Number does not exist");
+    }
 
     final AccountEntity byAccountNumber = accountRepository.findByAccountNumber(accountNumber);
 
