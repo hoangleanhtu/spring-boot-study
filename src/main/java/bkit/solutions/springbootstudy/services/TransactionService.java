@@ -49,23 +49,13 @@ public class TransactionService {
           throw new IllegalArgumentException("fromAccountNumber does not exist");
         });
 
-    final AccountEntity toAccountInfo = accounts.stream()
-        .filter(it -> it.getAccountNumber().equalsIgnoreCase(toAccountNumber))
-        .findFirst()
-        .orElseThrow(() -> {
-          log.error("toAccountNumber {} does not exist", toAccountNumber);
-          throw new IllegalArgumentException("toAccountNumber does not exist");
-        });
-
     final BigDecimal transactionAmount = transaction.amount();
-    final BigDecimal newBalanceOfFromAccount = fromAccountInfo.getBalance()
+    final BigDecimal newBalanceOfFromAccount = fromAccountInfo
+        .getBalance()
         .subtract(transactionAmount);
-    if (newBalanceOfFromAccount.compareTo(BigDecimal.ZERO) < 0) {
+    if (accountRepository.debit(fromAccountNumber, transactionAmount) == 0) {
       throw new IllegalArgumentException("Not enough balance");
     }
-
-    fromAccountInfo.setBalance(newBalanceOfFromAccount);
-    accountRepository.save(fromAccountInfo);
     transactionRepository.save(
         TransactionEntity.builder()
             .amount(transactionAmount)
@@ -75,8 +65,7 @@ public class TransactionService {
             .build()
     );
 
-    toAccountInfo.setBalance(toAccountInfo.getBalance().add(transactionAmount));
-    accountRepository.save(toAccountInfo);
+    accountRepository.credit(toAccountNumber, transactionAmount);
     transactionRepository.save(
         TransactionEntity.builder()
             .accountNumber(toAccountNumber)
@@ -85,6 +74,10 @@ public class TransactionService {
             .type(TransactionType.CREDIT)
             .build()
     );
+
+    if (transactionAmount.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new IllegalArgumentException("transaction amount must be greater than ZERO");
+    }
 
     return new AccountResponse(fromAccountNumber, newBalanceOfFromAccount);
   }

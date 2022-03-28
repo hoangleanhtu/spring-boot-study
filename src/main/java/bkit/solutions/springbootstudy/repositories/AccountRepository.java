@@ -20,6 +20,6 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
   int credit(String accountNumber, BigDecimal amount);
 
   @Modifying
-  @Query("update AccountEntity a set a.balance = a.balance - :amount where a.accountNumber = :accountNumber")
+  @Query("update AccountEntity a set a.balance = a.balance - :amount where a.accountNumber = :accountNumber and (a.balance - :amount) >= 0")
   int debit(String accountNumber, BigDecimal amount);
 }
