@@ -21,8 +21,8 @@ public record TransactionController(TransactionService transactionService) {
     return transactionService.list(accountNumber);
   }
 
-  @PostMapping
-  public AccountResponse transfer(@RequestBody TransferRequest transaction) {
+  @PostMapping("v1/transfer")
+  public AccountResponse transferV1(@RequestBody TransferRequest transaction) {
     return transactionService.transfer(transaction);
   }
 
