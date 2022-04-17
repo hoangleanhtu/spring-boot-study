@@ -43,13 +43,14 @@ public class TransactionService {
     log.info("Loaded receivingAccountInfo {}", receivingAccountInfo);
 
     final BigDecimal transactionAmount = transaction.amount();
-    final BigDecimal newBalanceOfFromAccount = sendingAccountInfo.getBalance()
-        .subtract(transactionAmount);
-    if (newBalanceOfFromAccount.compareTo(BigDecimal.ZERO) < 0) {
+    final BigDecimal currentBalance = sendingAccountInfo.getBalance();
+
+    if (transactionAmount.compareTo(currentBalance) > 0) {
       throw new IllegalArgumentException("Not enough balance");
     }
 
-    sendingAccountInfo.setBalance(newBalanceOfFromAccount);
+    sendingAccountInfo.setBalance(currentBalance
+        .subtract(transactionAmount));
     log.info("Saving sendingAccountInfo {}", sendingAccountInfo);
     accountRepository.save(sendingAccountInfo);
 

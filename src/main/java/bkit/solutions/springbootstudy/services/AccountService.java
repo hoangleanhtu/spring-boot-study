@@ -4,7 +4,6 @@ import bkit.solutions.springbootstudy.dtos.AccountResponse;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
 import java.math.BigDecimal;
-import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,21 +13,15 @@ public class AccountService {
 
   private final AccountRepository accountRepository;
 
-  public AccountResponse create(String accountNumber) {
+  public AccountResponse create(String accountNumber, BigDecimal depositAmount) {
 
     final AccountEntity createdAccount = accountRepository.save(
         AccountEntity.builder()
             .accountNumber(accountNumber)
-            .balance(BigDecimal.ZERO)
+            .balance(depositAmount)
             .build());
 
     return new AccountResponse(createdAccount.getAccountNumber(), createdAccount.getBalance());
   }
 
-  public Collection<AccountResponse> list() {
-    return accountRepository.findAll()
-        .stream()
-        .map(it -> new AccountResponse(it.getAccountNumber(), it.getBalance()))
-        .toList();
-  }
 }

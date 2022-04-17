@@ -1,0 +1,14 @@
+spring.datasource.url: jdbc:postgresql://localhost:5432/spring_boot
+spring.datasource.username: pUseR
+spring.datasource..password: pPassW0
+
+spring.jpa.open-in-view: false
+server.port: 8181
+
+spring.jpa.hibernate.ddl-auto: create-drop
+init-data:
+  accounts:
+  - accountNumber: tu
+    depositAmount: 1000
+  - accountNumber: vinh
+    depositAmount: 2000
