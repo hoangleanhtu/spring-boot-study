@@ -130,13 +130,6 @@ public class TransactionService {
 
   @Transactional
   public AccountResponse deposit(String accountNumber, BigDecimal amount) {
-    transactionRepository.save(
-        TransactionEntity.builder()
-            .accountNumber(accountNumber)
-            .type(TransactionType.CREDIT)
-            .amount(amount)
-            .build()
-    );
 
     final int rowUpdated = accountRepository.credit(accountNumber, amount);
     if (rowUpdated == 0) {
