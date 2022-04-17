@@ -35,88 +35,88 @@ public class TransactionService {
 
   @Transactional
   public AccountResponse transferV1(TransferRequest transaction) {
-    final String fromAccountNumber = transaction.fromAccountNumber();
-    final String toAccountNumber = transaction.toAccountNumber();
+    final String sendingAccountNumber = transaction.sendingAccountNumber();
+    final String receivingAccountNumber = transaction.receivingAccountNumber();
 
     final List<AccountEntity> accounts = accountRepository.findAllByAccountNumberIn(
-        Set.of(fromAccountNumber, toAccountNumber));
+        Set.of(sendingAccountNumber, receivingAccountNumber));
 
-    final AccountEntity fromAccountInfo = getAccountInfo(accounts, fromAccountNumber,
-        "fromAccountNumber {} does not exist",
-        "fromAccountNumber does not exist");
-    log.debug("Loaded fromAccountInfo {}", fromAccountInfo);
+    final AccountEntity sendingAccountInfo = getAccountInfo(accounts, sendingAccountNumber,
+        "sendingAccountNumber {} does not exist",
+        "sendingAccountNumber does not exist");
+    log.info("Loaded sendingAccountInfo {}", sendingAccountInfo);
 
-    final AccountEntity toAccountInfo = getAccountInfo(accounts, toAccountNumber,
-        "toAccountNumber {} does not exist", "toAccountNumber does not exist");
-    log.debug("Loaded toAccountInfo {}", toAccountInfo);
+    final AccountEntity receivingAccountInfo = getAccountInfo(accounts, receivingAccountNumber,
+        "receivingAccountNumber {} does not exist", "receivingAccountNumber does not exist");
+    log.info("Loaded receivingAccountInfo {}", receivingAccountInfo);
 
     final BigDecimal transactionAmount = transaction.amount();
-    final BigDecimal newBalanceOfFromAccount = fromAccountInfo.getBalance()
+    final BigDecimal newBalanceOfFromAccount = sendingAccountInfo.getBalance()
         .subtract(transactionAmount);
     if (newBalanceOfFromAccount.compareTo(BigDecimal.ZERO) < 0) {
       throw new IllegalArgumentException("Not enough balance");
     }
 
-    fromAccountInfo.setBalance(newBalanceOfFromAccount);
-    log.info("Saving fromAccountInfo {}", fromAccountInfo);
-    accountRepository.save(fromAccountInfo);
+    sendingAccountInfo.setBalance(newBalanceOfFromAccount);
+    log.info("Saving sendingAccountInfo {}", sendingAccountInfo);
+    accountRepository.save(sendingAccountInfo);
     transactionRepository.save(
         TransactionEntity.builder()
             .amount(transactionAmount)
             .type(TransactionType.DEBIT)
-            .accountNumber(fromAccountNumber)
-            .counterpartyAccountNumber(toAccountNumber)
+            .accountNumber(sendingAccountNumber)
+            .counterpartyAccountNumber(receivingAccountNumber)
             .build()
     );
 
-    toAccountInfo.setBalance(toAccountInfo.getBalance().add(transactionAmount));
-    log.info("Saving toAccountInfo {}", toAccountInfo);
-    accountRepository.save(toAccountInfo);
+    receivingAccountInfo.setBalance(receivingAccountInfo.getBalance().add(transactionAmount));
+    log.info("Saving receivingAccountInfo {}", receivingAccountInfo);
+    accountRepository.save(receivingAccountInfo);
     transactionRepository.save(
         TransactionEntity.builder()
-            .accountNumber(toAccountNumber)
+            .accountNumber(receivingAccountNumber)
             .amount(transactionAmount)
-            .counterpartyAccountNumber(fromAccountNumber)
+            .counterpartyAccountNumber(sendingAccountNumber)
             .type(TransactionType.CREDIT)
             .build()
     );
 
-    return new AccountResponse(fromAccountNumber, newBalanceOfFromAccount);
+    return new AccountResponse(sendingAccountNumber, newBalanceOfFromAccount);
   }
 
   @Transactional
   public AccountResponse transferV2(TransferRequest transaction) {
-    final String fromAccountNumber = transaction.fromAccountNumber();
-    final String toAccountNumber = transaction.toAccountNumber();
+    final String sendingAccountNumber = transaction.sendingAccountNumber();
+    final String receivingAccountNumber = transaction.receivingAccountNumber();
 
     final List<AccountEntity> accounts = accountRepository.findAllByAccountNumberIn(
-        Set.of(fromAccountNumber, toAccountNumber));
+        Set.of(sendingAccountNumber, receivingAccountNumber));
 
-    final AccountEntity fromAccountInfo = getAccountInfo(accounts, fromAccountNumber,
-        "fromAccountNumber {} does not exist", "fromAccountNumber does not exist");
+    final AccountEntity fromAccountInfo = getAccountInfo(accounts, sendingAccountNumber,
+        "sendingAccountNumber {} does not exist", "sendingAccountNumber does not exist");
 
     final BigDecimal transactionAmount = transaction.amount();
     final BigDecimal newBalanceOfFromAccount = fromAccountInfo
         .getBalance()
         .subtract(transactionAmount);
-    if (accountRepository.debit(fromAccountNumber, transactionAmount) == 0) {
+    if (accountRepository.debit(sendingAccountNumber, transactionAmount) == 0) {
       throw new IllegalArgumentException("Not enough balance");
     }
     transactionRepository.save(
         TransactionEntity.builder()
             .amount(transactionAmount)
             .type(TransactionType.DEBIT)
-            .accountNumber(fromAccountNumber)
-            .counterpartyAccountNumber(toAccountNumber)
+            .accountNumber(sendingAccountNumber)
+            .counterpartyAccountNumber(receivingAccountNumber)
             .build()
     );
 
-    accountRepository.credit(toAccountNumber, transactionAmount);
+    accountRepository.credit(receivingAccountNumber, transactionAmount);
     transactionRepository.save(
         TransactionEntity.builder()
-            .accountNumber(toAccountNumber)
+            .accountNumber(receivingAccountNumber)
             .amount(transactionAmount)
-            .counterpartyAccountNumber(fromAccountNumber)
+            .counterpartyAccountNumber(sendingAccountNumber)
             .type(TransactionType.CREDIT)
             .build()
     );
@@ -125,7 +125,7 @@ public class TransactionService {
       throw new IllegalArgumentException("transaction amount must be greater than ZERO");
     }
 
-    return new AccountResponse(fromAccountNumber, newBalanceOfFromAccount);
+    return new AccountResponse(sendingAccountNumber, newBalanceOfFromAccount);
   }
 
   @Transactional
