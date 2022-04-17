@@ -1,0 +1,10 @@
+POST http://127.0.0.1:8181/transactions/v1/transfer
+Content-Type: application/json
+
+{
+  "sendingAccountNumber": "vinh",
+  "receivingAccountNumber": "tu",
+  "amount": 100
+}
+
+###

@@ -31,9 +31,98 @@ public class TransactionService {
         .toList();
   }
 
-  public AccountResponse transfer(TransferRequest transaction) {
-    // TODO tu.hoang implement
-    throw new IllegalArgumentException("not implement yet");
+  @Transactional
+  public void transferV1(TransferRequest transferPayload) {
+    final String sendingAccountNumber = transferPayload.sendingAccountNumber();
+    final String receivingAccountNumber = transferPayload.receivingAccountNumber();
+
+    final AccountEntity sendingAccountInfo = accountRepository.findByAccountNumber(sendingAccountNumber).get();
+    log.info("Loaded sendingAccountInfo {}", sendingAccountInfo);
+
+    final AccountEntity receivingAccountInfo = accountRepository.findByAccountNumber(receivingAccountNumber).get();
+    log.info("Loaded receivingAccountInfo {}", receivingAccountInfo);
+
+    final BigDecimal transactionAmount = transferPayload.amount();
+    final BigDecimal currentBalance = sendingAccountInfo.getBalance();
+
+    if (transactionAmount.compareTo(currentBalance) > 0) {
+      throw new IllegalArgumentException("Not enough balance");
+    }
+
+    sendingAccountInfo.setBalance(currentBalance
+        .subtract(transactionAmount));
+    log.info("Saving sendingAccountInfo {}", sendingAccountInfo);
+    accountRepository.save(sendingAccountInfo);
+
+    receivingAccountInfo.setBalance(receivingAccountInfo.getBalance().add(transactionAmount));
+    log.info("Saving receivingAccountInfo {}", receivingAccountInfo);
+    accountRepository.save(receivingAccountInfo);
+
+    transactionRepository.save(
+        TransactionEntity.builder()
+            .amount(transactionAmount)
+            .type(TransactionType.DEBIT)
+            .accountNumber(sendingAccountNumber)
+            .counterpartyAccountNumber(receivingAccountNumber)
+            .build()
+    );
+
+    transactionRepository.save(
+        TransactionEntity.builder()
+            .accountNumber(receivingAccountNumber)
+            .amount(transactionAmount)
+            .counterpartyAccountNumber(sendingAccountNumber)
+            .type(TransactionType.CREDIT)
+            .build()
+    );
+  }
+
+  @Transactional
+  public void transferV2(TransferRequest transaction) {
+    final String sendingAccountNumber = transaction.sendingAccountNumber();
+    final BigDecimal transactionAmount = transaction.amount();
+
+    if (accountRepository.debit(sendingAccountNumber, transactionAmount) == 0) {
+      throw new IllegalArgumentException("Not enough balance");
+    }
+
+    final String receivingAccountNumber = transaction.receivingAccountNumber();
+    transactionRepository.save(
+        TransactionEntity.builder()
+            .amount(transactionAmount)
+            .type(TransactionType.DEBIT)
+            .accountNumber(sendingAccountNumber)
+            .counterpartyAccountNumber(receivingAccountNumber)
+            .build()
+    );
+
+    accountRepository.credit(receivingAccountNumber, transactionAmount);
+    transactionRepository.save(
+        TransactionEntity.builder()
+            .accountNumber(receivingAccountNumber)
+            .amount(transactionAmount)
+            .counterpartyAccountNumber(sendingAccountNumber)
+            .type(TransactionType.CREDIT)
+            .build()
+    );
+  }
+
+  @Transactional
+  public AccountResponse deposit(String accountNumber, BigDecimal amount) {
+
+    final int rowUpdated = accountRepository.credit(accountNumber, amount);
+    if (rowUpdated == 0) {
+      log.error("Account Number {} does not exist", accountNumber);
+      throw new IllegalArgumentException("Account Number does not exist");
+    }
+
+    final AccountEntity byAccountNumber = accountRepository.findByAccountNumber(accountNumber)
+        .orElseThrow(() -> {
+          log.error("Account Number {} does not exist", accountNumber);
+          throw new IllegalArgumentException("Account Number does not exist");
+        });
+
+    return new AccountResponse(accountNumber, byAccountNumber.getBalance());
   }
 
   private Function<TransactionEntity, TransactionDto> toDto() {
@@ -44,26 +133,5 @@ public class TransactionService {
         .counterpartyAccountNumber(it.getCounterpartyAccountNumber())
         .id(it.getId())
         .build();
-  }
-
-  @Transactional
-  public AccountResponse deposit(String accountNumber, BigDecimal amount) {
-    transactionRepository.save(
-        TransactionEntity.builder()
-            .accountNumber(accountNumber)
-            .type(TransactionType.CREDIT)
-            .amount(amount)
-            .build()
-    );
-
-    final int rowUpdated = accountRepository.deposit(accountNumber, amount);
-    if (rowUpdated == 0) {
-      log.error("Account Number {} does not exist", accountNumber);
-      throw new IllegalArgumentException("Account Number does not exist");
-    }
-
-    final AccountEntity byAccountNumber = accountRepository.findByAccountNumber(accountNumber);
-
-    return new AccountResponse(accountNumber, byAccountNumber.getBalance());
   }
 }

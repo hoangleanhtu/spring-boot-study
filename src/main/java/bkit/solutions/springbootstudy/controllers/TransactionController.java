@@ -2,7 +2,6 @@ package bkit.solutions.springbootstudy.controllers;
 
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
-import bkit.solutions.springbootstudy.dtos.AccountResponse;
 import bkit.solutions.springbootstudy.services.TransactionService;
 import java.util.Collection;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +20,13 @@ public record TransactionController(TransactionService transactionService) {
     return transactionService.list(accountNumber);
   }
 
-  @PostMapping
-  public AccountResponse transfer(@RequestBody TransferRequest transaction) {
-    return transactionService.transfer(transaction);
+  @PostMapping("v1/transfer")
+  public void transferV1(@RequestBody TransferRequest transaction) {
+    transactionService.transferV1(transaction);
   }
 
+  @PostMapping("v2/transfer")
+  public void transferV2(@RequestBody TransferRequest transaction) {
+    transactionService.transferV2(transaction);
+  }
 }
