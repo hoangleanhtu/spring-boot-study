@@ -29,4 +29,9 @@ public record TransactionController(TransactionService transactionService) {
   public void transferV2(@RequestBody TransferRequest transaction) {
     transactionService.transferV2(transaction);
   }
+
+  @PostMapping("v2.1/transfer")
+  public void transferFeeV21(@RequestBody TransferRequest transaction) {
+    transactionService.transferFeeV21(transaction);
+  }
 }

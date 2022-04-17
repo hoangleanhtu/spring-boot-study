@@ -1,6 +1,5 @@
 package bkit.solutions.springbootstudy.services;
 
-import bkit.solutions.springbootstudy.dtos.AccountResponse;
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransactionType;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
@@ -21,6 +20,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TransactionService {
 
+  private static final BigDecimal ONE_THOUSAND = BigDecimal.valueOf(1000);
+  private static final BigDecimal TRANSFER_FEE = BigDecimal.ONE;
   private final TransactionRepository transactionRepository;
   private final AccountRepository accountRepository;
 
@@ -108,21 +109,40 @@ public class TransactionService {
   }
 
   @Transactional
-  public AccountResponse deposit(String accountNumber, BigDecimal amount) {
+  public void transferFeeV21(TransferRequest transferPayload) {
+    final String sendingAccountNumber = transferPayload.sendingAccountNumber();
+    final AccountEntity sendingAccountInfo = accountRepository.findByAccountNumber(sendingAccountNumber).get();
 
-    final int rowUpdated = accountRepository.credit(accountNumber, amount);
-    if (rowUpdated == 0) {
-      log.error("Account Number {} does not exist", accountNumber);
-      throw new IllegalArgumentException("Account Number does not exist");
+    final BigDecimal currentBalance = sendingAccountInfo.getBalance();
+    final BigDecimal transferAmount = transferPayload.amount();
+
+    final BigDecimal transferAmountWithFee = currentBalance.compareTo(ONE_THOUSAND) >= 0 ? transferAmount
+        : transferAmount.add(
+        TRANSFER_FEE);
+
+    if (accountRepository.debit(sendingAccountNumber, transferAmountWithFee) == 0) {
+      throw new IllegalArgumentException("Not enough balance");
     }
 
-    final AccountEntity byAccountNumber = accountRepository.findByAccountNumber(accountNumber)
-        .orElseThrow(() -> {
-          log.error("Account Number {} does not exist", accountNumber);
-          throw new IllegalArgumentException("Account Number does not exist");
-        });
+    final String receivingAccountNumber = transferPayload.receivingAccountNumber();
+    transactionRepository.save(
+        TransactionEntity.builder()
+            .amount(transferAmountWithFee)
+            .type(TransactionType.DEBIT)
+            .accountNumber(sendingAccountNumber)
+            .counterpartyAccountNumber(receivingAccountNumber)
+            .build()
+    );
 
-    return new AccountResponse(accountNumber, byAccountNumber.getBalance());
+    accountRepository.credit(receivingAccountNumber, transferAmount);
+    transactionRepository.save(
+        TransactionEntity.builder()
+            .accountNumber(receivingAccountNumber)
+            .amount(transferAmount)
+            .counterpartyAccountNumber(sendingAccountNumber)
+            .type(TransactionType.CREDIT)
+            .build()
+    );
   }
 
   private Function<TransactionEntity, TransactionDto> toDto() {

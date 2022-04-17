@@ -8,3 +8,23 @@ Content-Type: application/json
 }
 
 ###
+POST http://127.0.0.1:8181/transactions/v2/transfer
+Content-Type: application/json
+
+{
+  "sendingAccountNumber": "vinh",
+  "receivingAccountNumber": "tu",
+  "amount": 1001
+}
+
+###
+POST http://127.0.0.1:8181/transactions/v2.1/transfer
+Content-Type: application/json
+
+{
+  "sendingAccountNumber": "vinh",
+  "receivingAccountNumber": "tu",
+  "amount": 98
+}
+
+###
