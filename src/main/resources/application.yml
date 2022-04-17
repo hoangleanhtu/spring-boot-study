@@ -9,6 +9,6 @@ spring.jpa.hibernate.ddl-auto: create-drop
 init-data:
   accounts:
   - accountNumber: tu
-    depositAmount: 1000
+    depositAmount: 0
   - accountNumber: vinh
     depositAmount: 2000
