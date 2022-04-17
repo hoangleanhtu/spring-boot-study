@@ -15,16 +15,24 @@ Content-Type: application/json
   "amount": {{amount}}
 }
 ###
-POST http://127.0.0.1:8181/transactions
+POST http://127.0.0.1:18181/transactions/v1/transfer
 Content-Type: application/json
 
 {
   "fromAccountNumber": "tu",
   "toAccountNumber": "vinh",
-  "amount": 1000
+  "amount": 100
 }
 ###
+POST http://127.0.0.1:8181/transactions/v1/transfer
+Content-Type: application/json
 
+{
+  "fromAccountNumber": "tu",
+  "toAccountNumber": "vinh",
+  "amount": 100
+}
+###
 
 ###
 GET http://127.0.0.1:8181/transactions/{{accountNumber}}

@@ -23,7 +23,11 @@ public record TransactionController(TransactionService transactionService) {
 
   @PostMapping("v1/transfer")
   public AccountResponse transferV1(@RequestBody TransferRequest transaction) {
-    return transactionService.transfer(transaction);
+    return transactionService.transferV1(transaction);
   }
 
+  @PostMapping("v2/transfer")
+  public AccountResponse transferV2(@RequestBody TransferRequest transaction) {
+    return transactionService.transferV2(transaction);
+  }
 }
