@@ -32,9 +32,9 @@ public class TransactionService {
   }
 
   @Transactional
-  public void transferV1(TransferRequest transaction) {
-    final String sendingAccountNumber = transaction.sendingAccountNumber();
-    final String receivingAccountNumber = transaction.receivingAccountNumber();
+  public void transferV1(TransferRequest transferPayload) {
+    final String sendingAccountNumber = transferPayload.sendingAccountNumber();
+    final String receivingAccountNumber = transferPayload.receivingAccountNumber();
 
     final AccountEntity sendingAccountInfo = accountRepository.findByAccountNumber(sendingAccountNumber).get();
     log.info("Loaded sendingAccountInfo {}", sendingAccountInfo);
@@ -42,7 +42,7 @@ public class TransactionService {
     final AccountEntity receivingAccountInfo = accountRepository.findByAccountNumber(receivingAccountNumber).get();
     log.info("Loaded receivingAccountInfo {}", receivingAccountInfo);
 
-    final BigDecimal transactionAmount = transaction.amount();
+    final BigDecimal transactionAmount = transferPayload.amount();
     final BigDecimal currentBalance = sendingAccountInfo.getBalance();
 
     if (transactionAmount.compareTo(currentBalance) > 0) {

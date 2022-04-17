@@ -17,7 +17,5 @@ At root of project, run:
 mvn spring-boot:run
 ```
 
-Test an API:
-```
-curl http://127.0.0.1:8181/accounts
-```
+## Load tests
+Use Apache jMeter to run file *.jmx in folder `http`
