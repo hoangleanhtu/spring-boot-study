@@ -10,10 +10,10 @@ import bkit.solutions.springbootstudy.repositories.TransactionRepository;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.function.Function;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -40,9 +40,6 @@ public class TransactionService {
     final AccountEntity sendingAccountInfo = accountRepository.findByAccountNumber(sendingAccountNumber).get();
     log.info("Loaded sendingAccountInfo {}", sendingAccountInfo);
 
-    final AccountEntity receivingAccountInfo = accountRepository.findByAccountNumber(receivingAccountNumber).get();
-    log.info("Loaded receivingAccountInfo {}", receivingAccountInfo);
-
     final BigDecimal transactionAmount = transferPayload.amount();
     final BigDecimal currentBalance = sendingAccountInfo.getBalance();
 
@@ -55,6 +52,8 @@ public class TransactionService {
     log.info("Saving sendingAccountInfo {}", sendingAccountInfo);
     accountRepository.save(sendingAccountInfo);
 
+    final AccountEntity receivingAccountInfo = accountRepository.findByAccountNumber(receivingAccountNumber).get();
+    log.info("Loaded receivingAccountInfo {}", receivingAccountInfo);
     receivingAccountInfo.setBalance(receivingAccountInfo.getBalance().add(transactionAmount));
     log.info("Saving receivingAccountInfo {}", receivingAccountInfo);
     accountRepository.save(receivingAccountInfo);
