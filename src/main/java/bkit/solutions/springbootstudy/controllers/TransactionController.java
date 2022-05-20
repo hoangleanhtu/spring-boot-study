@@ -1,5 +1,8 @@
 package bkit.solutions.springbootstudy.controllers;
 
+import static bkit.solutions.springbootstudy.constants.TransactionApiEndpoints.TRANSFER_V1;
+
+import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
 import bkit.solutions.springbootstudy.services.TransactionService;
@@ -12,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("transactions")
+@RequestMapping(TransactionApiEndpoints.PREFIX)
 public record TransactionController(TransactionService transactionService) {
 
   @GetMapping("{accountNumber}")
@@ -20,7 +23,7 @@ public record TransactionController(TransactionService transactionService) {
     return transactionService.list(accountNumber);
   }
 
-  @PostMapping("v1/transfer")
+  @PostMapping(TRANSFER_V1)
   public void transferV1(@RequestBody TransferRequest transaction) {
     transactionService.transferV1(transaction);
   }
