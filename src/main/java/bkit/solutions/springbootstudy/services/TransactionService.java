@@ -33,7 +33,7 @@ public class TransactionService {
   }
 
   @Transactional
-  public void transferV1(TransferRequest transferPayload) {
+  public AccountEntity transferV1(TransferRequest transferPayload) {
     final String sendingAccountNumber = transferPayload.sendingAccountNumber();
     final String receivingAccountNumber = transferPayload.receivingAccountNumber();
 
@@ -75,6 +75,8 @@ public class TransactionService {
             .type(TransactionType.CREDIT)
             .build()
     );
+
+    return sendingAccountInfo;
   }
 
   @Transactional

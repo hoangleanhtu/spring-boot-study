@@ -5,6 +5,7 @@ import static bkit.solutions.springbootstudy.constants.TransactionApiEndpoints.T
 import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
+import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.services.TransactionService;
 import java.util.Collection;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,8 +25,8 @@ public record TransactionController(TransactionService transactionService) {
   }
 
   @PostMapping(TRANSFER_V1)
-  public void transferV1(@RequestBody TransferRequest transaction) {
-    transactionService.transferV1(transaction);
+  public AccountEntity transferV1(@RequestBody TransferRequest transaction) {
+    return transactionService.transferV1(transaction);
   }
 
   @PostMapping("v2/transfer")
