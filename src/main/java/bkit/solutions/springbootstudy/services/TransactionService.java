@@ -26,6 +26,7 @@ public class TransactionService {
   private final AccountRepository accountRepository;
 
   public Collection<TransactionDto> list(final String accountNumber) {
+    log.info("Loading tx of {}", accountNumber);
     return transactionRepository.findAllByAccountNumber(accountNumber)
         .stream()
         .map(toDto())

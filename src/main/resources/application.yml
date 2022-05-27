@@ -4,7 +4,6 @@ spring.datasource.password: pPassW0
 
 spring.jpa.open-in-view: false
 server.port: 8181
-
 spring.jpa.hibernate.ddl-auto: create-drop
 init-data:
   accounts:
@@ -12,3 +11,6 @@ init-data:
     depositAmount: 0
   - accountNumber: vinh
     depositAmount: 2000
+spring:
+  application:
+    name: bkit-solutions-study
