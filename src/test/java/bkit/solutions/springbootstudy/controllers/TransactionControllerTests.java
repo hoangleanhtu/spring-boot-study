@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -35,9 +36,14 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @Autowired
   private MockMvc mockMvc;
 
+  @AfterEach
+  void clean() {
+    accountRepository.deleteAll();
+  }
+
   @ParameterizedTest
   @DisplayName("transferV1 with valid account & balance should be successful")
-  @MethodSource // use transferV1ShouldBeSuccessful() below
+  @MethodSource // use transferV1ShouldBeSuccessful()
   void transferV1ShouldBeSuccessful(String requestPayload, AccountEntity sendingAccount,
       AccountEntity receivingAccount, BigDecimal expectedBalance) throws Exception {
     accountRepository.save(sendingAccount);
@@ -64,10 +70,11 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
 
     final BigDecimal oneThousand = new BigDecimal("1000");
 
+    final String amountPath = "$.amount";
     return Stream.of(
         Arguments.of(
             JsonPath.parse(transferV1Payload)
-                .set("$.amount", oneThousand)
+                .set(amountPath, oneThousand)
                 .jsonString(),
             AccountEntity.builder()
                 .accountNumber(sendingAccountNumber)
@@ -78,6 +85,20 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
                 .balance(BigDecimal.ZERO)
                 .build(),
             BigDecimal.ZERO
+        ),
+        Arguments.of(
+            JsonPath.parse(transferV1Payload)
+                .set(amountPath, new BigDecimal("900"))
+                .jsonString(),
+            AccountEntity.builder()
+                .accountNumber(sendingAccountNumber)
+                .balance(oneThousand)
+                .build(),
+            AccountEntity.builder()
+                .accountNumber(receivingAccountNumber)
+                .balance(BigDecimal.ZERO)
+                .build(),
+            new BigDecimal("100")
         )
     );
   }
