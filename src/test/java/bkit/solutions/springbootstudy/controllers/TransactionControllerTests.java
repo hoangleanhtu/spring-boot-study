@@ -46,9 +46,11 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @MethodSource // use transferV1ShouldBeSuccessful()
   void transferV1ShouldBeSuccessful(String requestPayload, AccountEntity sendingAccount,
       AccountEntity receivingAccount, BigDecimal expectedBalance) throws Exception {
+    // GIVEN
     accountRepository.save(sendingAccount);
     accountRepository.save(receivingAccount);
 
+    // WHEN
     mockMvc
         .perform(post(TRANSACTION_V1_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
