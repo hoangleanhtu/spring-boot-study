@@ -11,12 +11,16 @@ import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,39 +35,51 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @Autowired
   private MockMvc mockMvc;
 
-  @Test
+  @ParameterizedTest
   @DisplayName("transferV1 with valid account & balance should be successful")
-  // TODO tu.hoang should improve tests for reader aware the values of each tests
-  void transferV1ShouldBeSuccessful() throws Exception {
-    final Resource transferV1Payload = new ClassPathResource(
-        "controllers/transaction-v1-request-payload.json");
-    final DocumentContext document = JsonPath.parse(transferV1Payload.getInputStream());
-
-    final String sendingAccountNumber = document.read("$.sendingAccountNumber");
-    final BigDecimal amount = document.read("$.amount", BigDecimal.class);
-    accountRepository.save(AccountEntity.builder()
-        .accountNumber(sendingAccountNumber)
-        .balance(amount)
-        .build()
-    );
-
-    final String receivingAccountNumber = document.read("$.receivingAccountNumber");
-    accountRepository.save(
-        AccountEntity.builder()
-            .balance(BigDecimal.ZERO)
-            .accountNumber(receivingAccountNumber)
-            .build()
-    );
+  @MethodSource // use transferV1ShouldBeSuccessful() below
+  void transferV1ShouldBeSuccessful(String requestPayload, AccountEntity sendingAccount,
+      AccountEntity receivingAccount, BigDecimal expectedBalance) throws Exception {
+    accountRepository.save(sendingAccount);
+    accountRepository.save(receivingAccount);
 
     mockMvc
         .perform(post(TRANSACTION_V1_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .content(document.jsonString())
+            .content(requestPayload)
         )
         .andExpect(
             status().isOk()
         )
-        .andExpect(jsonPath("$.balance", comparesEqualTo(BigDecimal.ZERO), BigDecimal.class));
+        .andExpect(jsonPath("$.balance", comparesEqualTo(expectedBalance), BigDecimal.class));
+  }
+
+  private static Stream<Arguments> transferV1ShouldBeSuccessful() throws IOException {
+    final File transferV1Payload = new ClassPathResource(
+        "controllers/transaction-v1-request-payload.json").getFile();
+    final DocumentContext document = JsonPath.parse(transferV1Payload);
+
+    final String sendingAccountNumber = document.read("$.sendingAccountNumber");
+    final String receivingAccountNumber = document.read("$.receivingAccountNumber");
+
+    final BigDecimal oneThousand = new BigDecimal("1000");
+
+    return Stream.of(
+        Arguments.of(
+            JsonPath.parse(transferV1Payload)
+                .set("$.amount", oneThousand)
+                .jsonString(),
+            AccountEntity.builder()
+                .accountNumber(sendingAccountNumber)
+                .balance(oneThousand)
+                .build(),
+            AccountEntity.builder()
+                .accountNumber(receivingAccountNumber)
+                .balance(BigDecimal.ZERO)
+                .build(),
+            BigDecimal.ZERO
+        )
+    );
   }
 
 }
