@@ -14,3 +14,6 @@ init-data:
 spring:
   application:
     name: bkit-solutions-study
+
+external-bank:
+  url: http://localhost:1080
