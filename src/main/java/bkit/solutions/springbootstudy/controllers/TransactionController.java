@@ -1,11 +1,13 @@
 package bkit.solutions.springbootstudy.controllers;
 
+import static bkit.solutions.springbootstudy.constants.TransactionApiEndpoints.EXTERNAL_TRANSFER_V1;
 import static bkit.solutions.springbootstudy.constants.TransactionApiEndpoints.TRANSFER_V1;
 
 import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
+import bkit.solutions.springbootstudy.services.ExternalTransferService;
 import bkit.solutions.springbootstudy.services.TransactionService;
 import java.util.Collection;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(TransactionApiEndpoints.PREFIX)
-public record TransactionController(TransactionService transactionService) {
+public record TransactionController(TransactionService transactionService,
+                                    ExternalTransferService externalTransferService) {
 
   @GetMapping("{accountNumber}")
   public Collection<TransactionDto> list(@PathVariable String accountNumber) {
@@ -37,5 +40,10 @@ public record TransactionController(TransactionService transactionService) {
   @PostMapping("v2.1/transfer")
   public void transferFeeV21(@RequestBody TransferRequest transaction) {
     transactionService.transferFeeV21(transaction);
+  }
+
+  @PostMapping(EXTERNAL_TRANSFER_V1)
+  public AccountEntity transferToExternalAccount(@RequestBody TransferRequest transferRequest) {
+    return externalTransferService.transfer(transferRequest);
   }
 }
