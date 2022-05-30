@@ -1,5 +1,8 @@
 package bkit.solutions.springbootstudy.services;
 
+import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE;
+import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE;
+
 import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.clients.dtos.PostExternalTransferRequest;
 import bkit.solutions.springbootstudy.clients.dtos.PostExternalTransferResponse;
@@ -45,8 +48,8 @@ public class ExternalTransferService {
     );
 
     switch (transferResponse.getErrorCode()) {
-      case ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
-      case ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
+      case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
+      case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
     }
 
     sendingAccount.setBalance(currentBalance.subtract(amount));

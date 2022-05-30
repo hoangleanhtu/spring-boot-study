@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(url = "${external-bank.url}", name = "ExternalBankClient")
 public interface ExternalBankClient {
+  String TRANSFER_EXTERNAL_PATH = "/transfer/external";
 
-  @PostMapping("/transfer/external")
+  @PostMapping(TRANSFER_EXTERNAL_PATH)
   PostExternalTransferResponse transfer(@RequestBody PostExternalTransferRequest request);
 }
