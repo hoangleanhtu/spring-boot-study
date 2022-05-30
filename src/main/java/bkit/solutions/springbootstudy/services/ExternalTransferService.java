@@ -12,6 +12,8 @@ import bkit.solutions.springbootstudy.entities.TransactionEntity;
 import bkit.solutions.springbootstudy.exceptions.ExternalTransferException;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
 import bkit.solutions.springbootstudy.repositories.TransactionRepository;
+import feign.FeignException.GatewayTimeout;
+import feign.RetryableException;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,30 +41,36 @@ public class ExternalTransferService {
     }
 
     final String receivingAccountNumber = transferRequest.receivingAccountNumber();
-    final PostExternalTransferResponse transferResponse = externalBankClient.transfer(
-        PostExternalTransferRequest.builder()
-            .amount(amount)
-            .fromAccountNumber(sendingAccountNumber)
-            .toAccountNumber(receivingAccountNumber)
-            .build()
-    );
+    try {
 
-    switch (transferResponse.getErrorCode()) {
-      case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
-      case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
+      final PostExternalTransferResponse transferResponse = externalBankClient.transfer(
+          PostExternalTransferRequest.builder()
+              .amount(amount)
+              .fromAccountNumber(sendingAccountNumber)
+              .toAccountNumber(receivingAccountNumber)
+              .build()
+      );
+
+      switch (transferResponse.getErrorCode()) {
+        case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
+        case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
+      }
+
+      sendingAccount.setBalance(currentBalance.subtract(amount));
+      accountRepository.save(sendingAccount);
+      transactionRepository.save(
+          TransactionEntity.builder()
+              .accountNumber(sendingAccountNumber)
+              .amount(amount)
+              .counterpartyAccountNumber(receivingAccountNumber)
+              .build()
+      );
+
+      return sendingAccount;
+    } catch (GatewayTimeout | RetryableException exception) {
+      log.error("call external api error", exception);
+      throw ExternalTransferException.TIMEOUT;
     }
-
-    sendingAccount.setBalance(currentBalance.subtract(amount));
-    accountRepository.save(sendingAccount);
-    transactionRepository.save(
-        TransactionEntity.builder()
-            .accountNumber(sendingAccountNumber)
-            .amount(amount)
-            .counterpartyAccountNumber(receivingAccountNumber)
-            .build()
-    );
-
-    return sendingAccount;
   }
 
 }
