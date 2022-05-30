@@ -38,12 +38,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @MockServerTest
-@ActiveProfiles({"test"})
 @TestPropertySource({"classpath:feign-timeout.properties"})
 public class TransactionControllerTests extends BaseApplicationIntegrationTests {
 

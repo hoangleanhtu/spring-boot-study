@@ -12,6 +12,7 @@ import bkit.solutions.springbootstudy.exceptions.ExternalTransferException;
 import bkit.solutions.springbootstudy.services.ExternalTransferService;
 import bkit.solutions.springbootstudy.services.TransactionService;
 import java.util.Collection;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -54,13 +55,13 @@ public record TransactionController(TransactionService transactionService,
   }
 
   @ExceptionHandler({ExternalTransferException.class})
-  ResponseEntity<ExternalTransferException> handleExternalTransferError(ExternalTransferException exception) {
+  ResponseEntity<Object> handleExternalTransferError(ExternalTransferException exception) {
     if (ExternalTransferErrorCodes.TIMEOUT_ERROR_CODE.equals(exception.getErrorCode())) {
       return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
           .build();
     }
 
     return ResponseEntity.badRequest()
-        .body(exception);
+        .body(Map.of("errorCode", exception.getErrorCode()));
   }
 }
