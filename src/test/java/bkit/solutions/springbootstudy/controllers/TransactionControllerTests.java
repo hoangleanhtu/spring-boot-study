@@ -14,6 +14,7 @@ import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
+import bkit.solutions.springbootstudy.repositories.TransactionRepository;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import java.io.File;
@@ -58,6 +59,8 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
 
   @Autowired
   private AccountRepository accountRepository;
+  @Autowired
+  private TransactionRepository transactionRepository;
 
   @Autowired
   private MockMvc mockMvc;
@@ -65,6 +68,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @AfterEach
   void clean() {
     accountRepository.deleteAll();
+    transactionRepository.deleteAll();
   }
 
   @ParameterizedTest
@@ -141,17 +145,20 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     final DocumentContext document = getTransferPayload();
     final String sendingAccountNumber = document.read($_SENDING_ACCOUNT_NUMBER_PATH);
     final BigDecimal amount = document.read($_AMOUNT_PATH, BigDecimal.class);
+    final BigDecimal currentBalance = amount.subtract(BigDecimal.ONE);
 
+    // GIVEN
     accountRepository.save(
         AccountEntity.builder()
             .accountNumber(sendingAccountNumber)
-            .balance(amount.subtract(BigDecimal.ONE))
+            .balance(currentBalance)
             .build()
     );
 
+    // WHEN
     mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH)
             .content(document.jsonString()))
-        .andExpect(status().is4xxClientError())
+        .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
         .andExpect(
             jsonPath($_ERROR_CODE_PATH,
                 is(NOT_ENOUGH_BALANCE_ERROR_CODE)));
