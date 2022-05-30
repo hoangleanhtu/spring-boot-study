@@ -121,9 +121,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
 
   @Test
   void transferToExternalAccountShouldFailWithErrorNotEnoughBalance() throws Exception {
-    final File transferV1Payload = getTransferPayloadFile();
-
-    final DocumentContext document = JsonPath.parse(transferV1Payload);
+    final DocumentContext document = getTransferPayload();
     final String sendingAccountNumber = document.read($_SENDING_ACCOUNT_NUMBER_PATH);
     final BigDecimal amount = document.read($_AMOUNT_PATH, BigDecimal.class);
 
@@ -140,5 +138,9 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
         .andExpect(
             jsonPath($_ERROR_CODE_PATH,
                 is(ExternalTransferException.NOT_ENOUGH_BALANCE_ERROR_CODE)));
+  }
+
+  private DocumentContext getTransferPayload() throws IOException {
+    return JsonPath.parse(getTransferPayloadFile());
   }
 }
