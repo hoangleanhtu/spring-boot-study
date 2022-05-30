@@ -18,5 +18,12 @@ spring:
 external-bank:
   url: http://localhost:1080
 
-logging.level.org.hibernate.SQL: DEBUG
-logging.level.org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+      ExternalBankClient:
+        connectTimeout: 10000
+        readTimeout: 5000

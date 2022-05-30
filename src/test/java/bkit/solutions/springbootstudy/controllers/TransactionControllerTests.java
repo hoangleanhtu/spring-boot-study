@@ -1,6 +1,7 @@
 package bkit.solutions.springbootstudy.controllers;
 
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.NOT_ENOUGH_BALANCE_ERROR_CODE;
+import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE;
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE;
 import static bkit.solutions.springbootstudy.utils.RestRequestBuilder.postJson;
 import static org.hamcrest.Matchers.comparesEqualTo;
@@ -26,7 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockserver.client.MockServerClient;
+import org.mockserver.model.Delay;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
@@ -35,9 +38,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @MockServerTest
+@ActiveProfiles({"test"})
+@TestPropertySource({"classpath:feign-timeout.properties"})
 public class TransactionControllerTests extends BaseApplicationIntegrationTests {
 
   private static final String TRANSACTION_V1_PATH =
@@ -152,8 +159,10 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
                 is(NOT_ENOUGH_BALANCE_ERROR_CODE)));
   }
 
-  @Test
-  void transferToNotFoundExternalAccount() throws Exception {
+  @ParameterizedTest
+  @ValueSource(strings = {RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE,
+      RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE})
+  void transferToExternalAccountRespondsErrorCode(final String errorCode) throws Exception {
     final DocumentContext transferPayload = getTransferPayload();
     final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
     final BigDecimal amount = transferPayload.read($_AMOUNT_PATH, BigDecimal.class);
@@ -168,26 +177,58 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
         new ClassPathResource("mock-responses/transfer-external-response-template.json").getFile());
 
     mockNotFoundResponse.set($_ERROR_CODE_PATH,
-        RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE);
+        errorCode);
 
-    final HttpRequest mockExternalTransferRequest = HttpRequest.request().withMethod(HttpMethod.POST.name())
-        .withPath(ExternalBankClient.TRANSFER_EXTERNAL_PATH);
-    mockServerClient.when(
-        mockExternalTransferRequest
-    ).respond(HttpResponse.response()
-        .withBody(mockNotFoundResponse.jsonString(), MediaType.APPLICATION_JSON));
+    final HttpRequest mockExternalTransferRequest = getMockExternalTransferRequest();
+    mockServerClient.when(mockExternalTransferRequest)
+        .respond(HttpResponse.response()
+            .withBody(mockNotFoundResponse.jsonString(), MediaType.APPLICATION_JSON));
 
     // WHEN
     mockMvc
         .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
         .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
         .andExpect(
-            jsonPath($_ERROR_CODE_PATH, is(RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE)));
+            jsonPath($_ERROR_CODE_PATH, is(errorCode)));
+
+    mockServerClient.verify(mockExternalTransferRequest);
+  }
+
+
+  @Test
+  void transferToExternalAccountTimeout() throws Exception {
+    final DocumentContext transferPayload = getTransferPayload();
+    final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
+    final BigDecimal amount = transferPayload.read($_AMOUNT_PATH, BigDecimal.class);
+
+    // GIVEN
+    accountRepository.save(AccountEntity.builder()
+        .accountNumber(sendingAccountNumber)
+        .balance(amount)
+        .build());
+
+    final HttpRequest mockExternalTransferRequest = getMockExternalTransferRequest();
+    mockServerClient.when(mockExternalTransferRequest)
+        .respond(
+            HttpResponse.response()
+                .withBody("{}", MediaType.APPLICATION_JSON)
+                .withDelay(Delay.seconds(1))
+        );
+
+    mockMvc
+        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
+        .andExpect(status().is(HttpStatus.GATEWAY_TIMEOUT.value()));
 
     mockServerClient.verify(mockExternalTransferRequest);
   }
 
   private DocumentContext getTransferPayload() throws IOException {
     return JsonPath.parse(getTransferPayloadFile());
+  }
+
+  private HttpRequest getMockExternalTransferRequest() {
+    return HttpRequest.request()
+        .withMethod(HttpMethod.POST.name())
+        .withPath(ExternalBankClient.TRANSFER_EXTERNAL_PATH);
   }
 }
