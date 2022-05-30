@@ -222,6 +222,31 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     mockServerClient.verify(mockExternalTransferRequest);
   }
 
+  @Test
+  void transferToExternalShouldBeSuccessful() throws Exception {
+    final DocumentContext transferPayload = getTransferPayload();
+    final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
+    final BigDecimal amount = transferPayload.read($_AMOUNT_PATH, BigDecimal.class);
+    accountRepository.save(
+        AccountEntity.builder()
+            .accountNumber(sendingAccountNumber)
+            .balance(amount)
+            .build()
+    );
+
+    final HttpRequest mockExternalTransferRequest = getMockExternalTransferRequest();
+    mockServerClient.when(mockExternalTransferRequest)
+        .respond(
+            HttpResponse.response()
+                .withBody("{}", MediaType.APPLICATION_JSON)
+        );
+
+    mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accountNumber", is(sendingAccountNumber)))
+        .andExpect(jsonPath("$.balance", comparesEqualTo(BigDecimal.ZERO), BigDecimal.class));
+  }
+
   private DocumentContext getTransferPayload() throws IOException {
     return JsonPath.parse(getTransferPayloadFile());
   }

@@ -6,6 +6,9 @@ import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCod
 import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.clients.dtos.PostExternalTransferRequest;
 import bkit.solutions.springbootstudy.clients.dtos.PostExternalTransferResponse;
+import bkit.solutions.springbootstudy.config.AmqpProperties;
+import bkit.solutions.springbootstudy.dtos.BalanceChangeDto;
+import bkit.solutions.springbootstudy.dtos.TransactionType;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.entities.TransactionEntity;
@@ -17,6 +20,8 @@ import feign.RetryableException;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +32,8 @@ public class ExternalTransferService {
   private final ExternalBankClient externalBankClient;
   private final AccountRepository accountRepository;
   private final TransactionRepository transactionRepository;
+  private final RabbitTemplate rabbitTemplate;
+  private final AmqpProperties amqpProperties;
 
   @Transactional
   public AccountEntity transfer(TransferRequest transferRequest) throws ExternalTransferException {
@@ -51,9 +58,12 @@ public class ExternalTransferService {
               .build()
       );
 
-      switch (transferResponse.getErrorCode()) {
-        case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
-        case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
+      final String errorCode = transferResponse.getErrorCode();
+      if (StringUtils.isNotBlank(errorCode)) {
+        switch (errorCode) {
+          case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
+          case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
+        }
       }
 
       sendingAccount.setBalance(currentBalance.subtract(amount));
@@ -63,6 +73,15 @@ public class ExternalTransferService {
               .accountNumber(sendingAccountNumber)
               .amount(amount)
               .counterpartyAccountNumber(receivingAccountNumber)
+              .type(TransactionType.CREDIT)
+              .build()
+      );
+
+      rabbitTemplate.convertAndSend(
+          amqpProperties.getNotifyBalanceQueue(),
+          BalanceChangeDto.builder().accountNumber(sendingAccountNumber)
+              .latestBalance(sendingAccount.getBalance())
+              .amount(amount)
               .build()
       );
 
