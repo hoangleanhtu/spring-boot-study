@@ -7,5 +7,5 @@ import lombok.NoArgsConstructor;
 public final class TransactionApiEndpoints {
   public static final String PREFIX = "/transactions";
   public static final String TRANSFER_V1 = "/v1/transfer";
-  public static final String EXTERNAL_TRANSFER_V1 = "v1/transfer/external";
+  public static final String EXTERNAL_TRANSFER_V1 = "/v1/transfer/external";
 }

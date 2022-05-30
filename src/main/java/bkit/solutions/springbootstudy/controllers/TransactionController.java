@@ -7,9 +7,12 @@ import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import bkit.solutions.springbootstudy.dtos.TransactionDto;
 import bkit.solutions.springbootstudy.dtos.TransferRequest;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
+import bkit.solutions.springbootstudy.exceptions.ExternalTransferException;
 import bkit.solutions.springbootstudy.services.ExternalTransferService;
 import bkit.solutions.springbootstudy.services.TransactionService;
 import java.util.Collection;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,7 +46,14 @@ public record TransactionController(TransactionService transactionService,
   }
 
   @PostMapping(EXTERNAL_TRANSFER_V1)
-  public AccountEntity transferToExternalAccount(@RequestBody TransferRequest transferRequest) {
+  public AccountEntity transferToExternalAccount(@RequestBody TransferRequest transferRequest)
+      throws ExternalTransferException {
     return externalTransferService.transfer(transferRequest);
+  }
+
+  @ExceptionHandler({ExternalTransferException.class})
+  ResponseEntity<ExternalTransferException> handleExternalTransferError(ExternalTransferException exception) {
+    return ResponseEntity.badRequest()
+        .body(exception);
   }
 }

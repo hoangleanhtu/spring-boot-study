@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
 
-  @Lock(LockModeType.PESSIMISTIC_READ)
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<AccountEntity> findByAccountNumber(String accountNumber);
 
   @Modifying
