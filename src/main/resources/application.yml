@@ -14,6 +14,9 @@ init-data:
 spring:
   application:
     name: bkit-solutions-study
+  rabbitmq:
+    port: 5672
+    host: localhost
 
 external-bank:
   url: http://localhost:1080
@@ -27,3 +30,5 @@ feign:
       ExternalBankClient:
         connectTimeout: 10000
         readTimeout: 5000
+amqp:
+  notify-balance-queue: notify-balance-queue
