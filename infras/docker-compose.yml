@@ -9,3 +9,8 @@ services:
       POSTGRES_DB: spring_boot
     ports:
       - "5432:5432"
+  rabbitmq:
+    image: rabbitmq:3.10.2-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"

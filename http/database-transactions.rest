@@ -28,3 +28,7 @@ Content-Type: application/json
 }
 
 ###
+GET http://127.0.0.1:8181/transactions/123
+Content-Type: application/json
+
+###

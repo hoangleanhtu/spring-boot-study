@@ -1,10 +1,8 @@
 package bkit.solutions.springbootstudy;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class SpringBootStudyApplicationTests {
+class SpringBootStudyApplicationTests extends BaseApplicationIntegrationTests {
 
 	@Test
 	void contextLoads() {

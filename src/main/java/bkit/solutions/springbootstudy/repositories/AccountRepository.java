@@ -3,12 +3,15 @@ package bkit.solutions.springbootstudy.repositories;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
 import java.math.BigDecimal;
 import java.util.Optional;
+import javax.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<AccountEntity> findByAccountNumber(String accountNumber);
 
   @Modifying
@@ -18,4 +21,5 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
   @Modifying
   @Query("update AccountEntity a set a.balance = a.balance - :amount where a.accountNumber = :accountNumber and (a.balance - :amount) >= 0")
   int debit(String accountNumber, BigDecimal amount);
+
 }
