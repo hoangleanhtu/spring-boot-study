@@ -4,6 +4,7 @@ import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCod
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE;
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE;
 import static bkit.solutions.springbootstudy.utils.RestRequestBuilder.postJson;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,13 +15,13 @@ import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import bkit.solutions.springbootstudy.entities.AccountEntity;
 import bkit.solutions.springbootstudy.repositories.AccountRepository;
-import bkit.solutions.springbootstudy.repositories.TransactionRepository;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
+import org.assertj.core.api.AbstractIntegerAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 @MockServerTest
@@ -54,21 +57,22 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   private static final String $_RECEIVING_ACCOUNT_NUMBER_PATH = "$.receivingAccountNumber";
   private static final String $_AMOUNT_PATH = "$.amount";
   private static final String $_ERROR_CODE_PATH = "$.errorCode";
+  public static final String TRANSACTIONS_TABLE_NAME = "transactions";
 
   private MockServerClient mockServerClient;
 
   @Autowired
   private AccountRepository accountRepository;
-  @Autowired
-  private TransactionRepository transactionRepository;
 
   @Autowired
   private MockMvc mockMvc;
 
+  @Autowired
+  private JdbcTemplate jdbcTemplate;
+
   @AfterEach
   void clean() {
-    accountRepository.deleteAll();
-    transactionRepository.deleteAll();
+    JdbcTestUtils.deleteFromTables(jdbcTemplate, "accounts", TRANSACTIONS_TABLE_NAME);
   }
 
   @ParameterizedTest
@@ -162,6 +166,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
         .andExpect(
             jsonPath($_ERROR_CODE_PATH,
                 is(NOT_ENOUGH_BALANCE_ERROR_CODE)));
+    assertNumberOfTransactions().isEqualTo(0);
   }
 
   @ParameterizedTest
@@ -197,6 +202,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
             jsonPath($_ERROR_CODE_PATH, is(errorCode)));
 
     mockServerClient.verify(mockExternalTransferRequest);
+    assertNumberOfTransactions().isEqualTo(0);
   }
 
 
@@ -225,6 +231,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
         .andExpect(status().is(HttpStatus.GATEWAY_TIMEOUT.value()));
 
     mockServerClient.verify(mockExternalTransferRequest);
+    assertNumberOfTransactions().isEqualTo(0);
   }
 
   @Test
@@ -250,6 +257,12 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accountNumber", is(sendingAccountNumber)))
         .andExpect(jsonPath("$.balance", comparesEqualTo(BigDecimal.ZERO), BigDecimal.class));
+    assertNumberOfTransactions().isEqualTo(1);
+  }
+
+  @NotNull
+  private AbstractIntegerAssert<?> assertNumberOfTransactions() {
+    return assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, TRANSACTIONS_TABLE_NAME));
   }
 
   private DocumentContext getTransferPayload() throws IOException {
