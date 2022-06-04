@@ -2,7 +2,7 @@ package bkit.solutions.springbootstudy;
 
 import org.junit.jupiter.api.Test;
 
-class SpringBootStudyApplicationTests extends BaseApplicationIntegrationTests {
+class SpringBootStudyApplicationIT extends BaseApplicationIntegrationTests {
 
 	@Test
 	void contextLoads() {

@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
-import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +46,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @MockServerTest
 @TestPropertySource({"classpath:feign-timeout.properties"})
-public class TransactionControllerTests extends BaseApplicationIntegrationTests {
+public class TransactionControllerIT extends BaseApplicationIntegrationTests {
 
   private static final String TRANSACTION_V1_PATH =
       TransactionApiEndpoints.PREFIX + TransactionApiEndpoints.TRANSFER_V1;
