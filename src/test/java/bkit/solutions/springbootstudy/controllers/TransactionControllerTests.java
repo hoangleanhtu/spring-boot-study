@@ -13,8 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bkit.solutions.springbootstudy.BaseApplicationIntegrationTests;
 import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
-import bkit.solutions.springbootstudy.entities.AccountEntity;
-import bkit.solutions.springbootstudy.repositories.AccountRepository;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import java.io.File;
@@ -66,9 +64,6 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   private MockServerClient mockServerClient;
 
   @Autowired
-  private AccountRepository accountRepository;
-
-  @Autowired
   private MockMvc mockMvc;
 
   @Autowired
@@ -83,11 +78,11 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @DisplayName("transferV1 with valid account & balance should be successful")
   @MethodSource
     // use transferV1ShouldBeSuccessful()
-  void transferV1ShouldBeSuccessful(String requestPayload, AccountEntity sendingAccount,
-      AccountEntity receivingAccount, BigDecimal expectedBalance) throws Exception {
+  void transferV1ShouldBeSuccessful(String requestPayload, String insertSendingAccountSql,
+      String insertReceivingAccountSql, BigDecimal expectedBalance) throws Exception {
     // GIVEN
-    accountRepository.save(sendingAccount);
-    accountRepository.save(receivingAccount);
+    jdbcTemplate.execute(insertSendingAccountSql);
+    jdbcTemplate.execute(insertReceivingAccountSql);
 
     // WHEN
     mockMvc
@@ -108,35 +103,26 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     final String receivingAccountNumber = document.read($_RECEIVING_ACCOUNT_NUMBER_PATH);
 
     final BigDecimal oneThousand = new BigDecimal("1000");
-
     final String amountPath = $_AMOUNT_PATH;
+
+    final String insertAccountSql = "INSERT INTO accounts (account_number, balance) VALUES ('%s', %d)";
+    final String insertSendingAccountSql = String.format(insertAccountSql, sendingAccountNumber, 1000);
+    final String insertReceivingAccountSql = String.format(insertAccountSql, receivingAccountNumber, 0);
     return Stream.of(
         Arguments.of(
             JsonPath.parse(transferV1Payload)
                 .set(amountPath, oneThousand)
                 .jsonString(),
-            AccountEntity.builder()
-                .accountNumber(sendingAccountNumber)
-                .balance(oneThousand)
-                .build(),
-            AccountEntity.builder()
-                .accountNumber(receivingAccountNumber)
-                .balance(BigDecimal.ZERO)
-                .build(),
+            insertSendingAccountSql,
+            insertReceivingAccountSql,
             BigDecimal.ZERO
         ),
         Arguments.of(
             JsonPath.parse(transferV1Payload)
                 .set(amountPath, new BigDecimal("900"))
                 .jsonString(),
-            AccountEntity.builder()
-                .accountNumber(sendingAccountNumber)
-                .balance(oneThousand)
-                .build(),
-            AccountEntity.builder()
-                .accountNumber(receivingAccountNumber)
-                .balance(BigDecimal.ZERO)
-                .build(),
+            insertSendingAccountSql,
+            insertReceivingAccountSql,
             new BigDecimal("100")
         )
     );
