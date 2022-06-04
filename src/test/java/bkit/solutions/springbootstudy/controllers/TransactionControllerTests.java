@@ -132,17 +132,17 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @Sql(statements = {"INSERT INTO accounts (account_number, balance) VALUES ('vinh', 1000)"})
   void transferToExternalAccountShouldFailWithErrorNotEnoughBalance() throws Exception {
     // WHEN
+    final DocumentContext transferPayload = getTransferPayloadDocument();
+    transferPayload.set($_SENDING_ACCOUNT_NUMBER_PATH, "vinh");
+    transferPayload.set($_AMOUNT_PATH, 1001);
+
     mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH)
-            .content(getTransferPayloadBytes()))
+            .content(transferPayload.jsonString()))
         .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
         .andExpect(
             jsonPath($_ERROR_CODE_PATH,
                 is(NOT_ENOUGH_BALANCE_ERROR_CODE)));
     assertNumberOfTransactions().isEqualTo(0);
-  }
-
-  private byte[] getTransferPayloadBytes() throws IOException {
-    return IOUtils.toByteArray(getClasspathResource(TRANSFER_V1_REQUEST_PAYLOAD).getInputStream());
   }
 
   @ParameterizedTest
@@ -163,8 +163,11 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
             .withBody(mockNotFoundResponse.jsonString(), MediaType.APPLICATION_JSON));
 
     // WHEN
+    final DocumentContext transferPayload = getTransferPayloadDocument();
+    transferPayload.set($_SENDING_ACCOUNT_NUMBER_PATH, "vinh");
+    transferPayload.set($_AMOUNT_PATH, 1001);
     mockMvc
-        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(getTransferPayloadBytes()))
+        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
         .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
         .andExpect(
             jsonPath($_ERROR_CODE_PATH, is(errorCode)));
@@ -186,8 +189,13 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
                 .withDelay(Delay.seconds(1))
         );
 
+    // WHEN
+    final DocumentContext transferPayload = getTransferPayloadDocument();
+    transferPayload.set($_SENDING_ACCOUNT_NUMBER_PATH, "vinh");
+    transferPayload.set($_AMOUNT_PATH, 1001);
+
     mockMvc
-        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(getTransferPayloadBytes()))
+        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
         .andExpect(status().is(HttpStatus.GATEWAY_TIMEOUT.value()));
 
     mockServerClient.verify(mockExternalTransferRequest);
@@ -197,7 +205,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   @Test
   @Sql(statements = {"INSERT INTO accounts (account_number, balance) VALUES ('vinh', 1001)"})
   void transferToExternalShouldBeSuccessful() throws Exception {
-    final DocumentContext transferPayload = getTransferPayload();
+    final DocumentContext transferPayload = getTransferPayloadDocument();
     final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
 
     final HttpRequest mockExternalTransferRequest = getMockExternalTransferRequest();
@@ -207,7 +215,10 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
                 .withBody("{}", MediaType.APPLICATION_JSON)
         );
 
-    mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(getTransferPayloadBytes()))
+    transferPayload.set($_SENDING_ACCOUNT_NUMBER_PATH, "vinh");
+    transferPayload.set($_AMOUNT_PATH, 1001);
+
+    mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accountNumber", is(sendingAccountNumber)))
         .andExpect(jsonPath("$.balance", comparesEqualTo(BigDecimal.ZERO), BigDecimal.class));
@@ -219,7 +230,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     return assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, TRANSACTIONS_TABLE_NAME));
   }
 
-  private DocumentContext getTransferPayload() throws IOException {
+  private DocumentContext getTransferPayloadDocument() throws IOException {
     return JsonPath.parse(getTransferPayloadFile());
   }
 
