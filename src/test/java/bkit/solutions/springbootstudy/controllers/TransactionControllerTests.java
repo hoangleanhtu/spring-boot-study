@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
+import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +43,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -58,6 +60,8 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   private static final String $_AMOUNT_PATH = "$.amount";
   private static final String $_ERROR_CODE_PATH = "$.errorCode";
   public static final String TRANSACTIONS_TABLE_NAME = "transactions";
+  public static final String TRANSFER_V1_REQUEST_PAYLOAD = "request-payloads/transaction-v1-request-payload.json";
+  public static final String MOCK_RESPONSES_TRANSFER_EXTERNAL_RESPONSE_TEMPLATE_JSON = "mock-responses/transfer-external-response-template.json";
 
   private MockServerClient mockServerClient;
 
@@ -138,30 +142,12 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     );
   }
 
-  @NotNull
-  private static File getTransferPayloadFile() throws IOException {
-    return new ClassPathResource(
-        "controllers/transaction-v1-request-payload.json").getFile();
-  }
-
   @Test
+  @Sql(statements = {"INSERT INTO accounts (account_number, balance) VALUES ('vinh', 1000)"})
   void transferToExternalAccountShouldFailWithErrorNotEnoughBalance() throws Exception {
-    final DocumentContext document = getTransferPayload();
-    final String sendingAccountNumber = document.read($_SENDING_ACCOUNT_NUMBER_PATH);
-    final BigDecimal amount = document.read($_AMOUNT_PATH, BigDecimal.class);
-    final BigDecimal currentBalance = amount.subtract(BigDecimal.ONE);
-
-    // GIVEN
-    accountRepository.save(
-        AccountEntity.builder()
-            .accountNumber(sendingAccountNumber)
-            .balance(currentBalance)
-            .build()
-    );
-
     // WHEN
     mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH)
-            .content(document.jsonString()))
+            .content(getTransferPayloadBytes()))
         .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
         .andExpect(
             jsonPath($_ERROR_CODE_PATH,
@@ -169,22 +155,18 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     assertNumberOfTransactions().isEqualTo(0);
   }
 
+  private byte[] getTransferPayloadBytes() throws IOException {
+    return IOUtils.toByteArray(getClasspathResource(TRANSFER_V1_REQUEST_PAYLOAD).getInputStream());
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE,
       RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE})
+  @Sql(statements = {"INSERT INTO accounts (account_number, balance) VALUES ('vinh', 1001)"})
   void transferToExternalAccountRespondsErrorCode(final String errorCode) throws Exception {
-    final DocumentContext transferPayload = getTransferPayload();
-    final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
-    final BigDecimal amount = transferPayload.read($_AMOUNT_PATH, BigDecimal.class);
-
     // GIVEN
-    accountRepository.save(AccountEntity.builder()
-        .accountNumber(sendingAccountNumber)
-        .balance(amount)
-        .build());
-
     final DocumentContext mockNotFoundResponse = JsonPath.parse(
-        new ClassPathResource("mock-responses/transfer-external-response-template.json").getFile());
+        getClasspathResource(MOCK_RESPONSES_TRANSFER_EXTERNAL_RESPONSE_TEMPLATE_JSON).getFile());
 
     mockNotFoundResponse.set($_ERROR_CODE_PATH,
         errorCode);
@@ -196,7 +178,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
 
     // WHEN
     mockMvc
-        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
+        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(getTransferPayloadBytes()))
         .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
         .andExpect(
             jsonPath($_ERROR_CODE_PATH, is(errorCode)));
@@ -207,17 +189,9 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
 
 
   @Test
+  @Sql(statements = {"INSERT INTO accounts (account_number, balance) VALUES ('vinh', 1001)"})
   void transferToExternalAccountTimeout() throws Exception {
-    final DocumentContext transferPayload = getTransferPayload();
-    final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
-    final BigDecimal amount = transferPayload.read($_AMOUNT_PATH, BigDecimal.class);
-
     // GIVEN
-    accountRepository.save(AccountEntity.builder()
-        .accountNumber(sendingAccountNumber)
-        .balance(amount)
-        .build());
-
     final HttpRequest mockExternalTransferRequest = getMockExternalTransferRequest();
     mockServerClient.when(mockExternalTransferRequest)
         .respond(
@@ -227,7 +201,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
         );
 
     mockMvc
-        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
+        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(getTransferPayloadBytes()))
         .andExpect(status().is(HttpStatus.GATEWAY_TIMEOUT.value()));
 
     mockServerClient.verify(mockExternalTransferRequest);
@@ -235,16 +209,10 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
   }
 
   @Test
+  @Sql(statements = {"INSERT INTO accounts (account_number, balance) VALUES ('vinh', 1001)"})
   void transferToExternalShouldBeSuccessful() throws Exception {
     final DocumentContext transferPayload = getTransferPayload();
     final String sendingAccountNumber = transferPayload.read($_SENDING_ACCOUNT_NUMBER_PATH);
-    final BigDecimal amount = transferPayload.read($_AMOUNT_PATH, BigDecimal.class);
-    accountRepository.save(
-        AccountEntity.builder()
-            .accountNumber(sendingAccountNumber)
-            .balance(amount)
-            .build()
-    );
 
     final HttpRequest mockExternalTransferRequest = getMockExternalTransferRequest();
     mockServerClient.when(mockExternalTransferRequest)
@@ -253,7 +221,7 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
                 .withBody("{}", MediaType.APPLICATION_JSON)
         );
 
-    mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
+    mockMvc.perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(getTransferPayloadBytes()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accountNumber", is(sendingAccountNumber)))
         .andExpect(jsonPath("$.balance", comparesEqualTo(BigDecimal.ZERO), BigDecimal.class));
@@ -273,5 +241,15 @@ public class TransactionControllerTests extends BaseApplicationIntegrationTests 
     return HttpRequest.request()
         .withMethod(HttpMethod.POST.name())
         .withPath(ExternalBankClient.TRANSFER_EXTERNAL_PATH);
+  }
+
+  @NotNull
+  private static File getTransferPayloadFile() throws IOException {
+    return getClasspathResource(TRANSFER_V1_REQUEST_PAYLOAD).getFile();
+  }
+
+  @NotNull
+  private static ClassPathResource getClasspathResource(String path) {
+    return new ClassPathResource(path);
   }
 }
