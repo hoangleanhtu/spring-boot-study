@@ -2,6 +2,7 @@ package bkit.solutions.springbootstudy.services;
 
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE;
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE;
+import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.WEEKEND_ERROR_CODE;
 
 import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.clients.dtos.PostExternalTransferRequest;
@@ -18,6 +19,9 @@ import bkit.solutions.springbootstudy.repositories.TransactionRepository;
 import feign.FeignException.GatewayTimeout;
 import feign.RetryableException;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -29,14 +33,22 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class ExternalTransferService {
+
   private final ExternalBankClient externalBankClient;
   private final AccountRepository accountRepository;
   private final TransactionRepository transactionRepository;
   private final RabbitTemplate rabbitTemplate;
   private final AmqpProperties amqpProperties;
+  private final Clock clock;
 
   @Transactional
   public AccountEntity transfer(TransferRequest transferRequest) throws ExternalTransferException {
+
+    final DayOfWeek today = LocalDateTime.now(clock).getDayOfWeek();
+    if (today == DayOfWeek.SATURDAY || today == DayOfWeek.SUNDAY) {
+      throw new ExternalTransferException(WEEKEND_ERROR_CODE);
+    }
+
     final String sendingAccountNumber = transferRequest.sendingAccountNumber();
     final AccountEntity sendingAccount = accountRepository.findByAccountNumber(
         sendingAccountNumber).get();
@@ -61,8 +73,10 @@ public class ExternalTransferService {
       final String errorCode = transferResponse.getErrorCode();
       if (StringUtils.isNotBlank(errorCode)) {
         switch (errorCode) {
-          case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
-          case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE -> throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
+          case RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE ->
+              throw ExternalTransferException.RECEIVING_ACCOUNT_NOT_FOUND;
+          case RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE ->
+              throw ExternalTransferException.RECEIVING_ACCOUNT_INACTIVE;
         }
       }
 

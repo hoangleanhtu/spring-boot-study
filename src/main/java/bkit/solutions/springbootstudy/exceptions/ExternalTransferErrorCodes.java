@@ -5,4 +5,5 @@ public interface ExternalTransferErrorCodes {
   String RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE = "ERR004";
   String RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE = "ERR005";
   String TIMEOUT_ERROR_CODE = "ERR000";
+  String WEEKEND_ERROR_CODE = "ERRWKE";
 }
