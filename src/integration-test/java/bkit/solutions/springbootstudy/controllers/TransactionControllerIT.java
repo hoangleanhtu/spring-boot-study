@@ -1,24 +1,10 @@
 package bkit.solutions.springbootstudy.controllers;
 
-import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.NOT_ENOUGH_BALANCE_ERROR_CODE;
-import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE;
-import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE;
-import static bkit.solutions.springbootstudy.utils.RestRequestBuilder.postJson;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.comparesEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import bkit.solutions.springbootstudy.BaseApplicationIntegrationTests;
 import bkit.solutions.springbootstudy.clients.ExternalBankClient;
 import bkit.solutions.springbootstudy.constants.TransactionApiEndpoints;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.stream.Stream;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -28,12 +14,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockserver.client.MockServerClient;
 import org.mockserver.model.Delay;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
-import org.mockserver.springtest.MockServerTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
@@ -44,7 +28,19 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-@MockServerTest
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.stream.Stream;
+
+import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.*;
+import static bkit.solutions.springbootstudy.utils.RestRequestBuilder.postJson;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.comparesEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @TestPropertySource({"classpath:feign-timeout.properties"})
 public class TransactionControllerIT extends BaseApplicationIntegrationTests {
 
@@ -59,8 +55,6 @@ public class TransactionControllerIT extends BaseApplicationIntegrationTests {
   public static final String TRANSACTIONS_TABLE_NAME = "transactions";
   public static final String TRANSFER_V1_REQUEST_PAYLOAD = "request-payloads/transaction-v1-request-payload.json";
   public static final String MOCK_RESPONSES_TRANSFER_EXTERNAL_RESPONSE_TEMPLATE_JSON = "mock-responses/transfer-external-response-template.json";
-
-  private MockServerClient mockServerClient;
 
   @Autowired
   private MockMvc mockMvc;

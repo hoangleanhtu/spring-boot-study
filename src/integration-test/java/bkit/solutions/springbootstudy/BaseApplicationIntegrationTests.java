@@ -1,6 +1,14 @@
 package bkit.solutions.springbootstudy;
 
 import bkit.solutions.springbootstudy.BaseApplicationIntegrationTests.Initializer;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.model.HttpForward;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.springtest.MockServerTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContextInitializer;
@@ -15,6 +23,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 @AutoConfigureMockMvc
 @ActiveProfiles({"test"})
 @ContextConfiguration(initializers = Initializer.class)
+@MockServerTest
+@EnableConfigurationProperties({MockserverPortForwardConfig.class})
 public abstract class BaseApplicationIntegrationTests {
 
   private static final GenericContainer rabbit = new GenericContainer(
@@ -26,13 +36,35 @@ public abstract class BaseApplicationIntegrationTests {
     rabbit.start();
   }
 
+  protected MockServerClient mockServerClient;
+
+  @Autowired
+  private MockserverPortForwardConfig mockserverPortForwardConfig;
+
+  @BeforeEach
+  void beforeEach() {
+    Optional.ofNullable(mockserverPortForwardConfig.getForwardTo())
+        .ifPresent(host -> mockServerClient
+            .when(
+                HttpRequest.request()
+            )
+            .withPriority(Integer.MAX_VALUE)
+            .forward(
+                HttpForward.forward()
+                    .withHost(host)
+            ));
+
+  }
+
   public static class Initializer implements
       ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
-      TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "spring.rabbitmq.port=" + rabbit.getMappedPort(5672));
-      TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "spring.rabbitmq.host=" + rabbit.getHost());
+      TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext,
+          "spring.rabbitmq.port=" + rabbit.getMappedPort(5672));
+      TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext,
+          "spring.rabbitmq.host=" + rabbit.getHost());
     }
   }
 }
