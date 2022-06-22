@@ -65,8 +65,8 @@ public class ExternalTransferService {
       final PostExternalTransferResponse transferResponse = externalBankClient.transfer(
           PostExternalTransferRequest.builder()
               .amount(amount)
-              .fromAccountNumber(sendingAccountNumber)
-              .toAccountNumber(receivingAccountNumber)
+              .from(sendingAccountNumber)
+              .to(receivingAccountNumber)
               .build()
       );
 

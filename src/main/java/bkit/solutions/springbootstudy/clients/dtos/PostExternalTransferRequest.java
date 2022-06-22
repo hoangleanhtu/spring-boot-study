@@ -13,7 +13,7 @@ import lombok.Setter;
 @Getter
 @Builder
 public class PostExternalTransferRequest {
-  private String fromAccountNumber;
-  private String toAccountNumber;
+  private String from;
+  private String to;
   private BigDecimal amount;
 }
