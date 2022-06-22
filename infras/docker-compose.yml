@@ -13,4 +13,9 @@ services:
     image: rabbitmq:3.10.2-management
     ports:
       - "15672:15672"
-      - "5672:5672"
+      - "25672:5672"
+
+  mockserver:
+    image: mockserver/mockserver
+    ports:
+      - "1080:1080"
