@@ -10,5 +10,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Getter
 @Setter
 public class MockserverPortForwardConfig {
-  private String forwardTo;
+  private String forwardHost;
+  private int forwardPort = 80;
 }

@@ -1,7 +1,7 @@
 package bkit.solutions.springbootstudy;
 
 import bkit.solutions.springbootstudy.BaseApplicationIntegrationTests.Initializer;
-import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.HttpForward;
@@ -43,16 +43,19 @@ public abstract class BaseApplicationIntegrationTests {
 
   @BeforeEach
   void beforeEach() {
-    Optional.ofNullable(mockserverPortForwardConfig.getForwardTo())
-        .ifPresent(host -> mockServerClient
-            .when(
-                HttpRequest.request()
-            )
-            .withPriority(Integer.MAX_VALUE)
-            .forward(
-                HttpForward.forward()
-                    .withHost(host)
-            ));
+    final String forwardHost = mockserverPortForwardConfig.getForwardHost();
+    if (StringUtils.isNotBlank(forwardHost)) {
+      mockServerClient
+          .when(
+              HttpRequest.request()
+          )
+          .withPriority(Integer.MAX_VALUE)
+          .forward(
+              HttpForward.forward()
+                  .withHost(forwardHost)
+                  .withPort(mockserverPortForwardConfig.getForwardPort())
+          );
+    };
 
   }
 
