@@ -15,7 +15,7 @@ docker-compose up -d
 ## Run Application
 At root of project, run:
 ```
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=mock
 ```
 
 ## Load tests
