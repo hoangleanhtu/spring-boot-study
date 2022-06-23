@@ -16,6 +16,6 @@ public class ClockConfig {
     if (StringUtils.isNotBlank(mockClock)) {
       return Clock.fixed(Instant.parse(mockClock), ZoneOffset.UTC);
     }
-    return Clock.systemDefaultZone();
+    return Clock.systemUTC();
   }
 }

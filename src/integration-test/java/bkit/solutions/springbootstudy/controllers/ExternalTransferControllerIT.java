@@ -3,10 +3,12 @@ package bkit.solutions.springbootstudy.controllers;
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.NOT_ENOUGH_BALANCE_ERROR_CODE;
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_INACTIVE_ERROR_CODE;
 import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.RECEIVING_ACCOUNT_NOT_FOUND_ERROR_CODE;
+import static bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes.WEEKEND_ERROR_CODE;
 import static bkit.solutions.springbootstudy.utils.RestRequestBuilder.postJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,9 +20,12 @@ import com.jayway.jsonpath.JsonPath;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -29,6 +34,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -56,9 +62,32 @@ public class ExternalTransferControllerIT extends BaseApplicationIntegrationTest
   @Autowired
   private JdbcTemplate jdbcTemplate;
 
+  @MockBean
+  private Clock clock;
+
+  @BeforeEach
+  void setup() {
+    final Clock systemUTC = Clock.systemUTC();
+    when(clock.instant()).thenReturn(systemUTC.instant());
+    when(clock.getZone()).thenReturn(systemUTC.getZone());
+  }
+
   @AfterEach
   void clean() {
     JdbcTestUtils.deleteFromTables(jdbcTemplate, "accounts", TRANSACTIONS_TABLE_NAME);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"2022-06-25T00:00:00Z", "2022-08-28T00:00:00Z"})
+  void transferOnWeekendShouldFail(String mockNow) throws Exception {
+    when(clock.instant()).thenReturn(Instant.parse(mockNow));
+
+    final DocumentContext transferPayload = getTransferPayloadDocument();
+    mockMvc
+        .perform(postJson(EXTERNAL_TRANSFER_V1_PATH).content(transferPayload.jsonString()))
+        .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
+        .andExpect(
+            jsonPath($_ERROR_CODE_PATH, is(WEEKEND_ERROR_CODE)));
   }
 
   @Test
