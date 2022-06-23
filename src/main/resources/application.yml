@@ -24,5 +24,16 @@ feign:
       ExternalBankClient:
         connectTimeout: 10000
         readTimeout: 5000
+        loggerLevel: full
+
 amqp:
   notify-balance-queue: notify-balance-queue
+
+logging:
+  level:
+    bkit:
+      solutions:
+        springbootstudy:
+          clients: DEBUG
+
+
