@@ -41,4 +41,26 @@
       <column name="username" type="VARCHAR(255)"/>
     </createTable>
   </changeSet>
+  <changeSet id="init-users-1" author="tu.hoang">
+    <insert tableName="users">
+      <column name="username" value="engineer"/>
+      <column name="password" value="engineer"/>
+      <column name="role" value="ENGINEER"/>
+    </insert>
+    <insert tableName="users">
+      <column name="username">office</column>
+      <column name="password">office</column>
+      <column name="role">OFFICE</column>
+    </insert>
+    <insert tableName="users">
+      <column name="username">manager</column>
+      <column name="password">manager</column>
+      <column name="role">MANAGER</column>
+    </insert>
+    <insert tableName="users">
+      <column name="username">customer</column>
+      <column name="password">customer</column>
+      <column name="role">CUSTOMER</column>
+    </insert>
+  </changeSet>
 </databaseChangeLog>
