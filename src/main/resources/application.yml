@@ -11,6 +11,8 @@ spring:
   rabbitmq:
     port: 25672
     host: localhost
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
 
 external-bank:
   url: http://bank.b
@@ -35,5 +37,3 @@ logging:
       solutions:
         springbootstudy:
           clients: DEBUG
-
-
