@@ -4,7 +4,7 @@ spring.datasource.password: pPassW0
 
 spring.jpa.open-in-view: false
 server.port: 8181
-spring.jpa.hibernate.ddl-auto: update
+spring.jpa.hibernate.ddl-auto: none
 spring:
   application:
     name: bkit-solutions-study
