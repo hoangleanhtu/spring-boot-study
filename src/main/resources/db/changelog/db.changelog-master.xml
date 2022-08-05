@@ -1,0 +1,44 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <changeSet author="tu.hoang (generated)" id="1659688084485-1">
+    <createTable tableName="accounts">
+      <column autoIncrement="true" name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="accounts_pkey"/>
+      </column>
+      <column name="account_number" type="VARCHAR(255)"/>
+      <column name="balance" type="numeric(19, 2)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="tu.hoang (generated)" id="1659688084485-2">
+    <addUniqueConstraint columnNames="account_number" constraintName="uk_6kplolsdtr3slnvx97xsy2kc8" tableName="accounts"/>
+  </changeSet>
+  <changeSet author="tu.hoang (generated)" id="1659688084485-3">
+    <createTable tableName="transactions">
+      <column autoIncrement="true" name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="transactions_pkey"/>
+      </column>
+      <column name="account_number" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="amount" type="numeric(19, 2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="counterparty_account_number" type="VARCHAR(255)"/>
+      <column name="type" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="tu.hoang (generated)" id="1659688084485-4">
+    <createTable tableName="users">
+      <column autoIncrement="true" name="id" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="users_pkey"/>
+      </column>
+      <column name="password" type="VARCHAR(255)"/>
+      <column name="role" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="username" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+</databaseChangeLog>
