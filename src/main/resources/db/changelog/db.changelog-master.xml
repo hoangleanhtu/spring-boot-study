@@ -44,22 +44,26 @@
   <changeSet id="init-users-1" author="tu.hoang">
     <insert tableName="users">
       <column name="username" value="engineer"/>
-      <column name="password" value="engineer"/>
+<!--      password = engineer-->
+      <column name="password" value="$2a$10$L9fwexzWBrzuo8zI3zhUKe5aqpjtWazvKqD32D1qJ2d8z.hivRxbi"/>
       <column name="role" value="ENGINEER"/>
     </insert>
     <insert tableName="users">
       <column name="username">office</column>
-      <column name="password">office</column>
+<!--      password = office-->
+      <column name="password">$2a$10$33pATJMJ1QV0o.1jJI2pyeS8Bgkwq75Uu0wJLoclpCMVbvUIilOLu</column>
       <column name="role">OFFICE</column>
     </insert>
     <insert tableName="users">
       <column name="username">manager</column>
-      <column name="password">manager</column>
+<!--      password = manager-->
+      <column name="password">$2a$10$J/c056jnkGn0QFKsuNKXreWoX9z6CJjrqKBkKtuaC0Hzjgj.qhdea</column>
       <column name="role">MANAGER</column>
     </insert>
     <insert tableName="users">
       <column name="username">customer</column>
-      <column name="password">customer</column>
+<!--      password = customer-->
+      <column name="password">$2a$10$CYhL.u1ZvKXevnXq04k9huRQmQWt6MP1wZCSl.JQQ.NVXdaj1NC4W</column>
       <column name="role">CUSTOMER</column>
     </insert>
   </changeSet>
