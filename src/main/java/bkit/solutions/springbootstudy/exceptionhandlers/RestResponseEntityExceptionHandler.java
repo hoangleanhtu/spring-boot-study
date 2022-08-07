@@ -1,4 +1,4 @@
-package bkit.solutions.springbootstudy.controllers;
+package bkit.solutions.springbootstudy.exceptionhandlers;
 
 import bkit.solutions.springbootstudy.dtos.ErrorResponse;
 import bkit.solutions.springbootstudy.exceptions.ExternalTransferErrorCodes;
