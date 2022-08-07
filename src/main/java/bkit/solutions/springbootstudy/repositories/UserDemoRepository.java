@@ -5,5 +5,5 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserDemoRepository extends JpaRepository<UserDemoEntity, Long> {
-  Optional<UserDemoEntity> findOneByUsernameAndPassword(String username, String password);
+  Optional<UserDemoEntity> findOneByUsername(String username);
 }
