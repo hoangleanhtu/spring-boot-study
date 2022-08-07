@@ -17,10 +17,7 @@ public record AuthenticationController(AuthenticationService authenticationServi
   @PostMapping("login")
   PostLoginResponse login(@RequestBody PostLoginRequest request)
       throws InvalidUsernameAndPasswordException {
-    final String accessToken = this.authenticationService.login(request.getUsername(),
+    return this.authenticationService.login(request.getUsername(),
         request.getPassword());
-    return PostLoginResponse.builder()
-        .accessToken(accessToken)
-        .build();
   }
 }
