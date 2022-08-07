@@ -19,3 +19,8 @@ services:
     image: mockserver/mockserver
     ports:
       - "1080:1080"
+
+  redis:
+    image: redis:7.0.4
+    ports:
+      - "6379:6379"

@@ -37,3 +37,7 @@ logging:
       solutions:
         springbootstudy:
           clients: DEBUG
+
+access-token:
+  length: 48
+  expiration: PT15M
