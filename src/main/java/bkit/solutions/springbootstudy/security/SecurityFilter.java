@@ -55,7 +55,6 @@ public class SecurityFilter implements Filter {
 
   private void checkAccessToken(HttpServletRequest request)
       throws InvalidAccessTokenException, UnAuthorizedException {
-    // TODO tu.hoang implement
     final String accessToken = request.getHeader("Authorization");
     if (StringUtils.isBlank(accessToken)) {
       throw new InvalidAccessTokenException();
